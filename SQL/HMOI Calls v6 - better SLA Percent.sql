@@ -158,6 +158,8 @@ order by YR DESC
 , DNISName ASC
 , DNISReporting ASC;
 
+/*Historically, Adi's files were generated with the 10 second logic below.  In Q2 2026, Art updated it 
+from 10 seconds to 25.  The regular "Time_Compliance" field best mirrors Mitel.*/
 
 DROP TABLE IF EXISTS #Call_Compliance;
 select distinct DNISName
