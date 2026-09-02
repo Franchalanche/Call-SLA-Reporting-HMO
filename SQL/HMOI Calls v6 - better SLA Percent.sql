@@ -86,7 +86,7 @@ from (
 		--	, DNISName ASC
 		--	, DNISReporting
 		) A
-join (
+LEFT join (
 		SELECT 
 			  year(MidnightStartDate) AS YR
 			, MONTH(MidnightStartDate) MTH
@@ -158,6 +158,7 @@ order by YR DESC
 , DNISName ASC
 , DNISReporting ASC;
 
+
 /*Historically, Adi's files were generated with the 10 second logic below.  In Q2 2026, Art updated it 
 from 10 seconds to 25.  The regular "Time_Compliance" field best mirrors Mitel.*/
 
@@ -170,7 +171,7 @@ select distinct DNISName
 	, TimeToAnswer
 	, case when TimeToAnswer <= 10 then 1 else TimeToAnswer-10 END as Adis_Time
 	, case when TimeToAnswer <= 25 then 1 else TimeToAnswer-25 END as ARTs_Time
-	, CASE WHEN TimeToAnswer <=30 then 1 else 0 end as Time_Compliance
+	, CASE WHEN TimeToAnswer <= 30 then 1 else 0 end as Time_Compliance
 	, cast(0 as int) as Adis_Time_Compliance
 	, cast(0 as int) as ARTs_Time_Compliance
 INTO #Call_COmpliance
@@ -238,8 +239,8 @@ with SLA_aggregates as
 	, case when cb.TotalCallsOffered = 0 then 0 
 		else ((sum(ARTs_Time_Compliance)*1.0)/count(*)*1.0)*cb.Answer_Percentage--)--cb.TotalCallsOffered*1.0--)--*cb.Answer_Percentage*1.0 
 		END AS Arts_Service_Level_Percent
-from #Call_Compliance cc
-JOIN #Call_Base cb
+from #Call_Base cb 
+LEFT JOIN #Call_Compliance cc 
 	on cc.DNISReporting = cb.DNISReporting
 		and cc.DNISName = cb.DNISName
 		and cc.Yr = cb.Yr
@@ -252,14 +253,14 @@ GROUP BY cc.DNISName
 	, cb.Answer_Percentage
 	, cb.TotalCallsOffered
 	, cb.TotalCallsHandled
-order by cc.YR DESC
-	, cc.mth
-	, cc.DNISReporting
+--order by cc.YR DESC
+--	, cc.mth
+--	, cc.DNISReporting
 )
 UPDATE cb
-set service_level = SLA.service_level
-, Adis_Service_Level = sla.Adis_Service_Level
-, Arts_Service_Level = sla.Arts_Service_Level
+set service_level = SLA.service_level_Percent
+, Adis_Service_Level = sla.Adis_Service_Level_Percent
+, Arts_Service_Level = sla.Arts_Service_Level_Percent
 FROM #call_base cb
 JOIN SLA_aggregates sla
 on cb.DNISReporting = SLA.DNISReporting
@@ -267,3 +268,14 @@ on cb.DNISReporting = SLA.DNISReporting
 	and cb.YR = sla.YR
 	and cb.MTH = sla.MTH
 ;
+
+SElect '' '#call_base';
+select * from #call_base
+WHERE DNISReporting in ('+18773695703','+18774447299','+18774447271','+18774447286','9146145160','9146145493','9146145162'
+						)
+order by YR DESC
+, mth asc
+, DNISName ASC
+, DNISReporting ASC;
+
+
